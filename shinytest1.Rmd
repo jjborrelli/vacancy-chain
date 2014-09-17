@@ -165,6 +165,9 @@ makeNET <- function(n, shellpar = c(1.5, 1), thres = 0.2, limit = c(1, 1.5),
 }
 ```
 
+
+Below you can alter the main parameters of the model to see how different settings will change the potential vacancy chain network,  
+
 ```{r shinyplot, echo = F, fig.height = 10, fig.width = 10}
 inputPanel(
   sliderInput("n", label = "Number of Individuals", min = 100, max = 300, value = 200, step = 10),
@@ -172,7 +175,7 @@ inputPanel(
   sliderInput("shell2", label = "Shell Size Par 2", min = 1, max = 5, value = 1, step = .5),
   sliderInput("thres", label = "Threshold", min = .05, max = 1, value = .2, step = .05), 
   sliderInput("lowlim", label = "Lower Swap Limit", min = 1, max = 1.5, value = 1, step = .05),
-  sliderInput("uplim", label = "Upper Swap Limit", min = 1.1, max = 5, value = 1.1, step = .1),  
+  sliderInput("uplim", label = "Upper Swap Limit", min = 1.1, max = 5, value = 1.5, step = .1),  
   selectInput("distmode", label = "Size Distribution", choices = c("lnorm", "unif", "exp"),
               selected = "lnorm")
 )
