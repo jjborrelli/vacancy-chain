@@ -6,6 +6,7 @@ output:
   html_document:
     fig_height: 10
     fig_width: 10
+    keep_md: yes
 runtime: shiny
 ---
 
@@ -90,7 +91,7 @@ The model is below.
 
 ```{r model}
 makeNET <- function(n, shellpar = c(1.5, 1), thres = 0.2, limit = c(1, 1.5),
-                    mode = "lnorm", plot = F, ...){
+                    mode = "lnorm", plot = F, spatial = "unif", ...){
   
   if(!length(shellpar) == 2){
     stop("shellpar must be a vector of length 2")
@@ -99,20 +100,36 @@ makeNET <- function(n, shellpar = c(1.5, 1), thres = 0.2, limit = c(1, 1.5),
     stop("limit must be a vector of length 2")
   }
   
-  # how big is each crab's shell
+  # Shell size distribution
+  
   if(mode == "lnorm"){
     shell <- rlnorm(n, shellpar[1], shellpar[2])
   }else if(mode == "unif"){
     shell <- runif(n, shellpar[1], shellpar[2])
   }else if(mode == "exp"){
     shell <- rexp(n)
+  }else if(mode == "norm"){
+    shell <- abs(rnorm(n, shellpar[1], shellpar[2]))
   }
   
-  #where is each crab?
-  x <- runif(n)
-  y <- runif(n)
+  # Spatial distribution of crabs
   
-  #compute distance between each crab
+  if(spatial == "unif"){
+    #where is each crab?
+    x <- runif(n)
+    y <- runif(n)
+  }
+  if(spatial == "normal"){
+    x <- rnorm(n)
+    y = rnorm(n)
+  }
+  if(spatial == "lognormal"){
+    x <- rlnorm(n)
+    y <- rlnorm(n)
+  }
+  
+  
+  #compute distrance between each crab
   d <- as.matrix(dist(data.frame(x, y)))
   
   #how far can they see
@@ -122,7 +139,7 @@ makeNET <- function(n, shellpar = c(1.5, 1), thres = 0.2, limit = c(1, 1.5),
   edge <- matrix(0, ncol = 2)
   for(i in 1:n){
     for(j in 1:n){
-      # get all pairs of individuals within the threshold distance
+      # get all pairs of individuals within the threshold distrance
       if(d[i,j] <= thres){adj <- matrix(c(i,j), nrow = 1, ncol = 2)}else{next}
       edge <- rbind(edge, adj)
     }
@@ -165,6 +182,103 @@ makeNET <- function(n, shellpar = c(1.5, 1), thres = 0.2, limit = c(1, 1.5),
 }
 ```
 
+```{r}
+meanPATH <- function(edge){
+  require(igraph)
+  require(NetIndices)
+  if(ncol(edge) > 2){edge <- edge[,1:2]}
+  g <- graph.edgelist(edge)
+  gmat <- get.adjacency(g, sparse = F)
+  tind <- TrophInd(gmat)
+  apl <- average.path.length(g)
+  return(list(avpath = apl, TL = tind))
+}
+```
+
+
+```{r}
+sensitivity <- function(densities, thres, shellpar, lim, distr, spatdistr = "unif", plot = T){
+  
+  # Altered density values
+  #
+  avpth <- c()
+  tpos <- c()
+  shells <- list()
+  for(i in 1:length(densities)){
+    net <- makeNET(densities[i], shellpar = shellpar[1,],
+                   thres = .2, limit = c(1, 1.5), mode = distr, spatial = spatdistr)
+    mpth <- meanPATH(net$edge)
+    avpth[i] <- unlist(mpth["avpath"])
+    tpos[[i]] <- mpth$TL
+    shells[[i]] <- net$shell
+    #cat(i, densities[i], "\n")
+  }
+  
+  # Altered threshold
+  #
+  avpth2 <- c()
+  tpos2 <- c()
+  shells2 <- list()
+  for(i in 1:length(thres)){
+    net <- makeNET(200, shellpar = shellpar[1,], thres = thres[i],
+                   limit = c(1, 1.5), mode = distr, spatial = spatdistr)
+    mpth <- meanPATH(net$edge)
+    avpth2[i] <- unlist(mpth["avpath"])
+    tpos2[[i]] <- mpth$TL
+    shells2[[i]] <- net$shell
+    #cat(i, thres[i], "\n")
+  }
+
+  # Varied shellparameters
+  #
+  avpth3 <- c()
+  tpos3 <- list()
+  shells3 <- list()
+  for(i in 1:nrow(shellpar)){
+    net <- makeNET(200, shellpar = shellpar[i,], mode = distr, spatial = spatdistr)
+    mpth <- meanPATH(net$edge)
+    avpth3[i] <- unlist(mpth["avpath"])
+    tpos3[[i]] <- mpth$TL
+    shells3[[i]] <- net$shell
+    #cat(i, shellpar[i,], "\n")
+  }
+
+  # Varied limit
+  #
+  avpth4 <- c()
+  tpos4 <- list()
+  shells4 <- list()
+  for(i in 1:nrow(lim)){
+    net <- makeNET(200, shellpar = shellpar[1,], limit = lim[i,], 
+                   mode = distr, spatial = spatdistr)
+    mpth <- meanPATH(net$edge)
+    avpth4[i] <- unlist(mpth["avpath"])
+    tpos4[[i]] <- mpth$TL
+    shells4[[i]] <- net$shell
+    #cat(i, lim[i,], "\n")
+  }
+  
+  d1 <- data.frame(x = densities, y = avpth, typ = "density")
+  d2 <- data.frame(x = thres, y = avpth2, typ = "threshold")
+  d3 <- data.frame(x = shellpar[,1], x2 = shellpar[,2], y = avpth3, typ = "meansize")
+  d4 <- data.frame(x = lim[,2], x2 = lim[,1], y = avpth4, typ = "swapsizelimit")
+
+  #d.all <- rbind(d1,d2,d3,d4)
+  
+  if(plot){
+    require(ggplot2)
+    g1 <- ggplot(d1, aes(x,y)) + geom_point() + xlab("Density") + ylab("Average Path")
+    g2 <- ggplot(d2, aes(x,y)) + geom_point() + xlab("distance Threshold") + ylab("Average Path")
+    g3 <- ggplot(d3, aes(x,y)) + geom_point() + xlab("Mean Size") + ylab("Average Path")
+    g4 <- ggplot(d4, aes(x,y)) + geom_point() + xlab("Max Swap Size") + ylab("Average Path")
+    
+    multiplot(g1, g2, g3, g4, cols = 2)
+
+  }
+
+}
+```
+
 
 Below you can alter the main parameters of the model to see how different settings will change the potential vacancy chain network,  
 
@@ -176,7 +290,7 @@ inputPanel(
   sliderInput("thres", label = "Threshold", min = .05, max = 1, value = .2, step = .05), 
   sliderInput("lowlim", label = "Lower Swap Limit", min = 1, max = 1.5, value = 1, step = .05),
   sliderInput("uplim", label = "Upper Swap Limit", min = 1.1, max = 5, value = 1.5, step = .1),  
-  selectInput("distmode", label = "Size Distribution", choices = c("lnorm", "unif", "exp"),
+  selectInput("distmode", label = "Size distribution", choices = c("lnorm", "unif", "exp"),
               selected = "lnorm")
 )
 
@@ -187,5 +301,192 @@ renderPlot({
 
 ```
 
+
+```{r eval = F}
+# Parameters with mode = lnorm
+densities <- c(100, 200, 300, 400, 800, 1000)
+thres <- runif(20, .05, 1)
+shellpar <- matrix(c(-1, -1, -1, .5, .5, 1, 1, 1, 1, 2, 10, 1, 5, 1, 2, 10), ncol = 2)
+limt <- matrix(c(1, 1, 1, 1.1, 1.1, 1.1, 1.1, 1.2, 1.5, 1.2, 1.3, 1.5), ncol = 2)
+
+
+system.time(
+s.test1 <- sensitivity(densities, thres, shellpar, limt, distr = "lnorm", plot = T)
+)
+
+shellpar2 <- matrix(c(rep(0, 10), 1, 1, 1, 1, 5, 5, 5, 10, 10, 10), ncol = 2)
+s.test2 <- sensitivity(densities, thres, shellpar2, limt, distr = "unif", plot = T)
+
+s.test3 <- sensitivity(densities, thres, shellpar, limt, distr = "exp", plot = T)
+
+s.test4 <- sensitivity(densities, thres, shellpar, limt, distr = "norm", plot = T)
+
+```
+
+Non-uniform distribution  
+
+```{r eval = F}
+
+system.time(
+sp.test1 <- sensitivity(densities, thres, shellpar, limt,
+                        distr = "lnorm", spatdistr = "normal", plot = T)
+)
+sp.test2 <- sensitivity(densities, thres, shellpar, limt,
+                        distr = "lnorm", spatdistr = "lognormal", plot = T)
+
+```
+
+
+Monte Carlo
+
+```{r}
+arena <- function(n, shellpar = c(1.5, 1), mode = "lnorm", spatial = "unif"){
+  
+  if(!length(shellpar) == 2){
+    stop("shellpar must be a vector of length 2")
+  }
+  
+  # Shell size distribution
+  
+  if(mode == "lnorm"){
+    shell <- rlnorm(n, shellpar[1], shellpar[2])
+  }else if(mode == "unif"){
+    shell <- runif(n, shellpar[1], shellpar[2])
+  }else if(mode == "exp"){
+    shell <- rexp(n)
+  }else if(mode == "norm"){
+    shell <- abs(rnorm(n, shellpar[1], shellpar[2]))
+  }
+  
+  # Spatial distribution of crabs
+  
+  if(spatial == "unif"){
+    #where is each crab?
+    x <- runif(n)
+    y <- runif(n)
+  }
+  if(spatial == "normal"){
+    x <- rnorm(n)
+    y = rnorm(n)
+  }
+  if(spatial == "lognormal"){
+    x <- rlnorm(n)
+    y <- rlnorm(n)
+  }
+  
+  pts <- data.frame(x, y)
+  return(list(loc = pts, shellsize = shell))
+}
+
+vac_chains <- function(input, nsim = 100, newshell, thres = 0.2, limit = c(1, 1.5), 
+                       spatial = "unif", short = F){
+  
+  chain <- c()
+  for(i in 1:nsim){
+    
+    # place a new shell
+    if(spatial == "unif"){
+      mt.shell <- runif(2)
+    }
+    if(spatial == "normal"){
+      mt.shell <- rnorm(2)
+    }
+    if(spatial == "lognormal"){
+      mt.shell <- rlnorm(2)
+    }
+    
+    d <- as.matrix(dist(rbind(input$loc, mt.shell)))
+    
+    distances <- which(d[nrow(d),-nrow(d)] <= thres)
+    shell <- input$shellsize
+    
+    a <- newshell > shell[distances]*limit[1]
+    b <- newshell <= shell[distances]*limit[2]
+    
+    pos <- which(a == TRUE & b == TRUE)
+    
+    if(length(pos) < 1){
+      chain[i] <- 0
+      next
+    }
+    
+    if(short){
+      make.edge <- pos[which(distances[pos] == names(which.min(d[nrow(d),distances[pos]])))]
+    }else{
+      make.edge <- sample(pos, 1)
+    }
+    
+    length <- 1 
+    run <- TRUE
+    while(run){
+      m.edge <- which(shell[distances][make.edge] == shell)
+      distances <- which(d[m.edge, -m.edge] <= thres)
+     
+      a <- shell[m.edge] > shell[distances]*limit[1]
+      b <- shell[m.edge] <= shell[distances]*limit[2]
+      
+      pos <- which(a ==T & b == T)
+      
+      if(length(pos) >= 1){
+        if(short){
+          make.edge <- min(distances[pos])
+        }else{
+          make.edge <- sample(pos, 1)
+        }
+        length <- length + 1
+        
+      }else{run <- FALSE}
+      
+      chain[i] <- length
+    }
+  }
+  
+  return(chain)
+}
+
+```
+
+```{r}
+ar <- arena(200)
+vc <- vac_chains(ar, newshell = 20, short = F)
+ggplot(data.frame(vc), aes(x = vc)) + geom_histogram(binwidth = 1)# + scale_x_continuous(breaks=0:7)
+mean(vc)
+median(vc)
+```
+
+
+
+```{r echo = F}
+inputPanel(
+  textInput("n", label = "Number of Crabs"),
+  selectInput("sizemode", label = "Shell Size Distribution", choices = c("unif", "lnorm", "exp"),
+              selected = "lnorm"),
+  selectInput("distmode", label = "Spatial Distribution", 
+              choices = c("unif", "normal", "lognormal"), selected = "unif"),
+  sliderInput("shellp1", label = "Shell Parameter 1", min = -1, max = 10, value = 0, step = .1),
+  sliderInput("shellp2", label = "Shell Parameter 2", min = .1, max = 10, value = 1, step = .1),
+  sliderInput("nsims", label = "Number of Simulations", min = 0, max = 1000, 
+              value = 100, step = 10),
+  sliderInput("threshold", label = "Distance Threshold", min = .01, max = 1,
+              value = .2, step = .01),
+  sliderInput("minsize", label = "Min Swap Size", min = 1, max = 1.5, 
+              value = 1, step = .05),
+  sliderInput("interval", label = "Swap Size Interval", min = .05, max = 2, 
+              value = .5, step = .05),
+  textInput("newshell", label = "New Shell Size")
+)
+
+renderPlot({
+  inp <- arena(as.numeric(input$n), mode = input$distmode, 
+               shellpar = c(input$shellp1, input$shellp2))
+  vc <- vac_chains(inp, newshell = as.numeric(input$newshell), 
+                   nsim = input$nsims, thres = input$threshold, 
+                   limit = c(input$minsize, input$minsize + input$interval))
+  
+  ggplot(data.frame(vc), aes(x = vc, y = ..density..)) + geom_histogram(binwidth = 1) + 
+    xlab("Chain Length")
+})
+
+```
 
 
