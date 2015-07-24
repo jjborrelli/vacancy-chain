@@ -3,73 +3,6 @@ library(compiler)
 library(ggplot2)
 library(data.table)
 
-# R cookbook function to plot multiple ggplot objects in one window
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-  require(grid)
-  
-  # Make a list from the ... arguments and plotlist
-  plots <- c(list(...), plotlist)
-  
-  numPlots = length(plots)
-  
-  # If layout is NULL, then use 'cols' to determine layout
-  if (is.null(layout)) {
-    # Make the panel
-    # ncol: Number of columns of plots
-    # nrow: Number of rows needed, calculated from # of cols
-    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
-                     ncol = cols, nrow = ceiling(numPlots/cols))
-  }
-  
-  if (numPlots==1) {
-    print(plots[[1]])
-    
-  } else {
-    # Set up the page
-    grid.newpage()
-    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-    
-    # Make each plot, in the correct location
-    for (i in 1:numPlots) {
-      # Get the i,j matrix positions of the regions that contain this subplot
-      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-      
-      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                      layout.pos.col = matchidx$col))
-    }
-  }
-}
-
-# Function to plot a spatially explicit network given inputs of an edgelist, xy positions of nodes, and node sizes
-plot_net <- function(edges, pos, shell){
-  require(ggplot2)
-  
-  x1 <- c()
-  y1 <- c()
-  x2 <- c()
-  y2 <- c()
-  for(i in 1:nrow(edges)){
-    x1[i] <- pos$x[edges[i,1]]
-    y1[i] <- pos$y[edges[i,1]]
-    x2[i] <- pos$x[edges[i,2]]
-    y2[i] <- pos$y[edges[i,2]]
-  }
-  e <- data.frame(x1, y1, x2, y2)
-  
-  
-  p <- ggplot(pos, aes(x = x, y = y)) 
-  p <- p + geom_segment(data = e, aes(x = x1, y = y1, xend = x2, yend = y2), alpha = .75)
-  p <- p + geom_point(aes(size = factor(shell)), col = "darkgreen") 
-  # the rest is just eliminating the background
-  p <- p + scale_x_continuous(breaks = NULL) + scale_y_continuous(breaks = NULL) 
-  p <- p + theme(panel.background = element_blank()) + theme(legend.position="none")
-  p <- p + theme(axis.title.x = element_blank(), axis.title.y = element_blank()) 
-  p <- p + theme( legend.background = element_rect(colour = NA)) 
-  p <- p + theme(panel.background = element_rect(fill = "white", colour = NA)) 
-  p <- p + theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
-  print(p)
-}
-
 
 ############################################################################################
 #########                             ######################################################
@@ -165,12 +98,12 @@ graph.props <- function(ed){
 
 graph.props.c <- cmpfun(graph.props)
 
-web_iters <- function(iter, n, sp, t, lim){
+web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif"){
   diff <- lim[2] - lim[1]
   res <- matrix(nrow = iter, ncol = 5)
   for(i in 1:iter){
-    shellsize <- size_distr.c(n = n, shellpar = sp, mode = "lnorm")
-    spatial.d <- spat_distr.c(n = n, spatial = "unif")
+    shellsize <- size_distr.c(n = n, shellpar = sp, mode = shelldist)
+    spatial.d <- spat_distr.c(n = n, spatial = spatdist)
     edge.d <- edge_distance.c(d = as.matrix(dist(as.data.frame(spatial.d))), thres = t)
     edges <- size_distance.c(shell = shellsize, edge = edge.d, limit = lim)
     
@@ -228,3 +161,52 @@ ggplot(all2, aes(x = Group.2, y = Group.3, col = x)) + geom_point(size = 3) + fa
 ############################################################################################
 #save.image(file = "C:/Users/jjborrelli/Desktop/vacChain.Rdata")
 #load("./Data/vacChain.Rdata")
+
+
+############################################################################################
+#
+# Size distributions : lnorm , unif , exp , norm
+# Spatial distributions : unif , normal , lognormal
+
+sizes <- c("lnorm", "unif", "exp", "norm")
+spatial <- c("unif", "normal", "lognormal")
+
+
+# number of individuals
+n <- seq(100, 300, 100)
+# shell parameters of lognormal distr
+spar <- list(c(.5, 1), c(0, 1), c(NA, NA), c(.5, 1))
+# threshold
+t <- seq(.1, 1, .2)
+# min/max shell size for swapping
+lim <- matrix(c(rep(1,6), seq(1, 2, .2)), nrow = 6, ncol = 2)
+
+pars <- expand.grid(n, t, lim[,1], lim[,2])
+
+diff1 <- pars[,4]-pars[,3]
+
+distros <- as.matrix(expand.grid(sizes, spatial))
+
+require(doSNOW)
+require(parallel)
+require(data.table)
+
+#make the cluster
+cl <- makeCluster(detectCores()-1)
+registerDoSNOW(cl)
+
+allDAT <- list()
+for(k in 1:nrow(distros)){
+  RESULT <- foreach(i = 1:nrow(pars)) %dopar% {
+    source("./Rscripts/vacancyNetScript.R")
+    paths <- web_iters(iter = 100, n = pars[i,1], sp = spar[[i]], t = pars[i,2], lim = c(pars[i, 3], pars[i,4]),
+                       shelldist = distros[i,2], spatdist = distros[i,2])
+    write(i, file = "C:/Users/jjborrelli/Dropbox/vacancy-runs.txt", append = T)
+    return(as.data.frame(paths))
+  }
+  allDAT[[k]] <- rbindlist(RESULT)
+}
+
+stopCluster(cl)
+
+#allDAT <- rbindlist(RESULT)

@@ -94,12 +94,12 @@ graph.props <- function(ed){
 
 graph.props.c <- cmpfun(graph.props)
 
-web_iters <- function(iter, n, sp, t, lim){
+web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif"){
   diff <- lim[2] - lim[1]
   res <- matrix(nrow = iter, ncol = 5)
   for(i in 1:iter){
-    shellsize <- size_distr.c(n = n, shellpar = sp, mode = "lnorm")
-    spatial.d <- spat_distr.c(n = n, spatial = "unif")
+    shellsize <- size_distr.c(n = n, shellpar = sp, mode = shelldist)
+    spatial.d <- spat_distr.c(n = n, spatial = spatdist)
     edge.d <- edge_distance.c(d = as.matrix(dist(as.data.frame(spatial.d))), thres = t)
     edges <- size_distance.c(shell = shellsize, edge = edge.d, limit = lim)
     
