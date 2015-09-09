@@ -94,7 +94,7 @@ graph.props <- function(ed){
 
 graph.props.c <- cmpfun(graph.props)
 
-web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif"){
+web_iters <- function(iter, n, sp, t, lim, shelldist, spatdist){
   diff <- lim[2] - lim[1]
   res <- matrix(nrow = iter, ncol = 5)
   for(i in 1:iter){
@@ -110,16 +110,36 @@ web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif
 }
 
 # number of individuals
-n <- seq(50, 500, 50)
+#n <- seq(50, 500, 50)
 # shell parameters of lognormal distr
-spar <- c(.5, 1)
+#spar <- c(.5, 1)
 # threshold
-t <- seq(.1, 1, .1)
+#t <- seq(.1, 1, .1)
 # min/max shell size for swapping
-lim <- matrix(c(rep(1,10), seq(1.1, 3, .2)), nrow = 10, ncol = 2)
-
-pars <- expand.grid(n, t, lim[,1], lim[,2])
+#lim <- matrix(c(rep(1,10), seq(1.1, 3, .2)), nrow = 10, ncol = 2)
+#
+#pars <- expand.grid(n, t, lim[,1], lim[,2])
 
 #diff1 <- pars[,4]-pars[,3]
 
 #paths <- matrix(0, nrow = 100, ncol = 5)
+
+
+sizes <- c("lnorm", "unif", "exp", "norm")
+spatial <- c("unif", "normal", "lognormal")
+
+
+# number of individuals
+n <- seq(100, 300, 100)
+# shell parameters of lognormal distr
+spar <- list(c(.5, 1), c(0, 1), c(NA, NA), c(.5, 1))
+# threshold
+t <- seq(.1, 1, .2)
+# min/max shell size for swapping
+lim <- matrix(c(rep(1,6), seq(1, 2, .2)), nrow = 6, ncol = 2)
+
+pars <- cbind(expand.grid(n, t, lim[,2]), 1)
+
+diff1 <- pars[,4]-pars[,3]
+
+distros <- as.matrix(expand.grid(sizes, spatial))

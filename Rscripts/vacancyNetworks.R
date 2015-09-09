@@ -181,7 +181,7 @@ t <- seq(.1, 1, .2)
 # min/max shell size for swapping
 lim <- matrix(c(rep(1,6), seq(1, 2, .2)), nrow = 6, ncol = 2)
 
-pars <- expand.grid(n, t, lim[,1], lim[,2])
+pars <- cbind(expand.grid(n, t, lim[,2]), 1)
 
 diff1 <- pars[,4]-pars[,3]
 
@@ -199,8 +199,8 @@ allDAT <- list()
 for(k in 1:nrow(distros)){
   RESULT <- foreach(i = 1:nrow(pars)) %dopar% {
     source("./Rscripts/vacancyNetScript.R")
-    paths <- web_iters(iter = 100, n = pars[i,1], sp = spar[[i]], t = pars[i,2], lim = c(pars[i, 3], pars[i,4]),
-                       shelldist = distros[i,2], spatdist = distros[i,2])
+    paths <- web_iters(iter = 100, n = pars[i,1], sp = spar[[i]], t = pars[i,2], lim = c(pars[i, 4], pars[i,3]),
+                       shelldist = distros[i,1], spatdist = distros[i,2])
     write(i, file = "C:/Users/jjborrelli/Dropbox/vacancy-runs.txt", append = T)
     return(as.data.frame(paths))
   }
