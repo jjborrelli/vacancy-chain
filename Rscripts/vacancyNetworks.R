@@ -93,14 +93,16 @@ graph.props <- function(ed){
   g <- graph.edgelist(ed)
   d <- diameter(g)
   apl <- average.path.length(g)
-  return(c(d, apl))
+  plh <- path.length.hist(g, directed = T)
+  pl.sd <- sd(rep(1:length(plh), each = plh))
+  return(c(d, apl, pl.sd))
 }
 
 graph.props.c <- cmpfun(graph.props)
 
 web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif"){
   diff <- lim[2] - lim[1]
-  res <- matrix(nrow = iter, ncol = 5)
+  res <- matrix(nrow = iter, ncol = 6)
   for(i in 1:iter){
     shellsize <- size_distr.c(n = n, shellpar = sp, mode = shelldist)
     spatial.d <- spat_distr.c(n = n, spatial = spatdist)
@@ -109,7 +111,7 @@ web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif
     
     res[i,] <- c(graph.props.c(edges), n, t, diff)
   }
-  colnames(res) <- c("diam", "avpath", "N", "Th", "diff")
+  colnames(res) <- c("diam", "avpath", "pathSD", "N", "Th", "diff")
   return(res)
 }
 
@@ -210,3 +212,6 @@ for(k in 1:nrow(distros)){
 stopCluster(cl)
 
 #allDAT <- rbindlist(RESULT)
+
+
+
