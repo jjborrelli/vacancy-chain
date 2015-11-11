@@ -95,12 +95,13 @@ makeCHAIN <- function(intro, arena, threshold = .2, limits = c(1.01,1.5)){
 
 arena<- setup(n = 200, shellpar = c(.5,1), mode = "lnorm", spatial = "unif")
 q <- quantile(arena[,3], probs = seq(.1, 1, .1))
+coords <- matrix(runif(400), ncol = 2) 
 
 lens <- matrix(nrow = length(q), ncol = 200)
 for(j in 1:length(q)){
   chlen <- list()
   for(i in 1:200){
-    ini <- c(runif(2), q[j])
+    ini <- c(coords[i,], q[j])
     chlen[[i]] <- makeCHAIN(ini, arena)
   }
   lens[j,] <- sapply(chlen, length)
