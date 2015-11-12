@@ -84,31 +84,33 @@ plot_web <- function(edge, shell, pos){
 }
 
 graph.props <- function(ed){
-  if(nrow(ed) == 0){return(c(0,0))}
+  if(nrow(ed) == 0){return(c(0,0,0))}
   
   g <- graph.edgelist(ed)
+  
   d <- diameter(g)
   apl <- average.path.length(g)
-  return(c(d, apl))
+  plh <- path.length.hist(g, directed = T)$res
+  pl.sd <- sd(rep(1:length(plh), plh))
+  return(c(d, apl, pl.sd))
 }
 
 graph.props.c <- cmpfun(graph.props)
 
-web_iters <- function(iter, n, sp, t, lim, shelldist, spatdist){
+web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif"){
   diff <- lim[2] - lim[1]
-  res <- matrix(nrow = iter, ncol = 5)
+  res <- matrix(nrow = iter, ncol = 6)
   for(i in 1:iter){
     shellsize <- size_distr.c(n = n, shellpar = sp, mode = shelldist)
     spatial.d <- spat_distr.c(n = n, spatial = spatdist)
     edge.d <- edge_distance.c(d = as.matrix(dist(as.data.frame(spatial.d))), thres = t)
-    edges <- size_distance.c(shell = shellsize, edge = edge.d, limit = lim)
+    eds <- size_distance.c(shell = shellsize, edge = edge.d, limit = lim)
     
-    res[i,] <- c(graph.props.c(edges), n, t, diff)
+    res[i,] <- c(graph.props.c(eds), n, t, diff)
   }
-  colnames(res) <- c("diam", "avpath", "N", "Th", "diff")
+  colnames(res) <- c("diam", "avpath", "pathSD", "N", "Th", "diff")
   return(res)
 }
-
 # number of individuals
 #n <- seq(50, 500, 50)
 # shell parameters of lognormal distr
