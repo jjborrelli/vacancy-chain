@@ -176,6 +176,7 @@ spatial <- c("unif", "normal", "lognormal")
 n <- seq(100, 300, 100)
 # shell parameters of lognormal distr
 spar <- list(c(.5, 1), c(0, 1), c(NA, NA), c(.5, 1))
+spar2 <- rep(spar, 3)
 # threshold
 t <- seq(.1, 1, .2)
 # min/max shell size for swapping
@@ -195,18 +196,23 @@ require(data.table)
 cl <- makeCluster(detectCores()-1)
 registerDoSNOW(cl)
 
-allDAT <- list()
+allDAT2 <- list()
 for(k in 1:nrow(distros)){
   RESULT <- foreach(i = 1:nrow(pars)) %dopar% {
     source("./Rscripts/vacancyNetScript.R")
-    paths <- web_iters(iter = 100, n = pars[i,1], sp = spar[[i]], t = pars[i,2], lim = c(pars[i, 4], pars[i,3]),
-                       shelldist = distros[i,1], spatdist = distros[i,2])
-    write(i, file = "C:/Users/jjborrelli/Dropbox/vacancy-runs.txt", append = T)
+    paths <- web_iters(iter = 100, n = pars[i,1], sp = spar2[[k]], t = pars[i,2], lim = c(pars[i, 4], pars[i,3]),
+                       shelldist = distros[k,1], spatdist = distros[k,2])
+    write(paste(k, i, sep = "-"), file = "C:/Users/jjborrelli/Dropbox/vacancy-runs.txt", append = T)
     return(as.data.frame(paths))
   }
-  allDAT[[k]] <- rbindlist(RESULT)
+  allDAT2[[k]] <- rbindlist(RESULT)
 }
 
 stopCluster(cl)
 
 #allDAT <- rbindlist(RESULT)
+test <- allDAT2[[1]]
+for(i in 1:12){
+  allDAT2[[i]] <- cbind(allDAT2[[i]], shell = distros[i,1], spat = distros[i,2])
+}
+rbindlist(allDAT2)
