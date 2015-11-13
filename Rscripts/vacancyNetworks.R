@@ -207,6 +207,7 @@ for(k in 1:nrow(distros)){
     write(paste(k, i, sep = "-"), file = "C:/Users/jjborrelli/Dropbox/vacancy-runs.txt", append = T)
     return(as.data.frame(paths))
   }
+  print(k)
   allDAT2[[k]] <- rbindlist(RESULT)
 }
 
@@ -218,5 +219,11 @@ test <- allDAT2[[1]]
 for(i in 1:12){
   allDAT2[[i]] <- cbind(allDAT2[[i]], shell = distros[i,1], spat = distros[i,2])
 }
-rbindlist(allDAT2)
 
+rblAD <- rbindlist(allDAT2)
+
+ggplot(rbindlist(allDAT2), aes(x = Th, y = avpath, col = factor(N))) + geom_point() + facet_grid(spat~shell + diff)
+
+agDAT <- aggregate(rblAD$avpath, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean)
+
+ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point() + facet_grid(Group.4~Group.5)
