@@ -92,17 +92,26 @@ makeCHAIN <- function(intro, arena, threshold = .2, limits = c(1.01,1.5)){
   return(v)
 }
 
-
-arena<- setup(n = 200, shellpar = c(.5,1), mode = "lnorm", spatial = "unif")
-q <- quantile(arena[,3], probs = seq(.1, 1, .1))
-coords <- matrix(runif(400), ncol = 2) 
-
-lens <- matrix(nrow = length(q), ncol = 200)
-for(j in 1:length(q)){
-  chlen <- list()
-  for(i in 1:200){
-    ini <- c(coords[i,], q[j])
-    chlen[[i]] <- makeCHAIN(ini, arena)
+sizes <- c("lnorm", "unif", "exp", "norm")
+ll10 <- list()
+for(k in 1:4){
+  
+  arena<- setup(n = 200, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
+  q <- quantile(arena[,3], probs = seq(.1, 1, .1))
+  coords <- matrix(runif(400), ncol = 2) 
+  
+  lens <- matrix(nrow = length(q), ncol = 200)
+  for(j in 1:length(q)){
+    chlen <- list()
+    for(i in 1:200){
+      ini <- c(coords[i,], q[j])
+      chlen[[i]] <- makeCHAIN(ini, arena)
+    }
+    lens[j,] <- sapply(chlen, length)
   }
-  lens[j,] <- sapply(chlen, length)
+  
+  ll10[[k]] <- lens
+  print(k)
 }
+
+matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll, apply, 1, median))), typ  = "l", ylab = "chainlength")
