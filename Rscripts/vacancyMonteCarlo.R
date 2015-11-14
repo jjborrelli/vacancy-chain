@@ -94,6 +94,7 @@ makeCHAIN <- function(intro, arena, threshold = .2, limits = c(1.01,1.5)){
 
 sizes <- c("lnorm", "unif", "exp", "norm")
 ll10 <- list()
+system.time(
 for(k in 1:4){
   
   arena<- setup(n = 200, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
@@ -113,5 +114,5 @@ for(k in 1:4){
   ll10[[k]] <- lens
   print(k)
 }
-
+)
 matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll, apply, 1, median))), typ  = "l", ylab = "chainlength")
