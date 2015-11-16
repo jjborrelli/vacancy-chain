@@ -222,8 +222,8 @@ for(i in 1:12){
 
 rblAD <- rbindlist(allDAT2)
 
-ggplot(rbindlist(allDAT2), aes(x = Th, y = avpath, col = factor(N))) + geom_point() + facet_grid(spat~shell + diff)
+ggplot(rbindlist(allDAT2), aes(x = Th, y = avpath, col = factor(N), shape = factor(diff), alpha = 0.5)) + geom_point() + geom_jitter() + facet_grid(shell ~ spat)
 
-agDAT <- aggregate(rblAD$avpath, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean)
+agDAT <- aggregate(rblAD$avpath, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean
 
 ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point() + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
