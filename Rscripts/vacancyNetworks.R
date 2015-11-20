@@ -2,7 +2,7 @@ library(igraph)
 library(compiler)
 library(ggplot2)
 library(data.table)
-
+library(reshape2)
 
 ############################################################################################
 #########                             ######################################################
@@ -153,7 +153,9 @@ allDAT <- rbindlist(RESULT)
 ggplot(allDAT, aes(x = Th, y = avpath)) + geom_point() + facet_grid(diff~N)
 ggplot(allDAT, aes(x = factor(Th), y = avpath)) + geom_boxplot() + facet_grid(diff~N, scales = "free_y") + theme_bw() + xlab("Threshold") + ylab("Average Chain Length")
 
-ggplot(allDAT[which(allDAT$N == 50 | allDAT$N == 250 | allDAT$N == 500),], aes(x = factor(Th), y = avpath, fill = factor(diff))) + geom_boxplot() + facet_grid(diff~N) + theme_bw() + xlab("Threshold") + ylab("Average Chain Length")
+plotDAT <- allDAT[which(allDAT$N == 50 | allDAT$N == 250 | allDAT$N == 500),]
+plotDAT <- plotDAT[which(plotDAT$diff == "0.1" | plotDAT$diff == "0.3" | plotDAT$diff == "0.7" | plotDAT$diff == "1.3" | plotDAT$diff == "1.9"),]
+ggplot(plotDAT , aes(x = factor(Th), y = avpath)) + geom_boxplot() + facet_grid(diff~N, scales = "free_y") + theme_bw() + xlab("Threshold") + ylab("Average Chain Length")
 
 ggplot(allDAT, aes(x = Th, y = diff, fill = avpath)) + geom_point() + facet_grid(.~N)
 
@@ -224,6 +226,9 @@ rblAD <- rbindlist(allDAT2)
 
 ggplot(rbindlist(allDAT2), aes(x = Th, y = avpath, col = factor(N), shape = factor(diff), alpha = 0.5)) + geom_point() + geom_jitter() + facet_grid(shell ~ spat)
 
-agDAT <- aggregate(rblAD$avpath, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean
+agDAT <- aggregate(rblAD$avpath, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean)
+agDAT2 <- aggregate(rblAD$pathSD, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean)
 
 ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point() + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
+
+ggplot(agDAT2, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point() + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain StDev") + theme_bw()

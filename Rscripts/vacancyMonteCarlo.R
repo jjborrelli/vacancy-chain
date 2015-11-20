@@ -115,4 +115,18 @@ for(k in 1:4){
   print(k)
 }
 )
-matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll, apply, 1, median))), typ  = "l", ylab = "chainlength")
+
+llmed  <- (do.call(rbind, lapply(ll, apply, 1, median)))
+rownames(llmed) <- sizes
+df1 <- cbind(melt(t(llmed)), stdev = "Small")
+
+llmed10  <- (do.call(rbind, lapply(ll10, apply, 1, median)))
+rownames(llmed10) <- sizes
+df2 <- cbind(melt(t(llmed10)), stdev = "Large")
+
+df3 <- rbind(df1, df2)
+
+ggplot(df3, aes(x = Var1/10, y = value, col = Var2)) + geom_path(lwd = 1) + geom_point(size = 4) + facet_grid(~stdev) + theme_bw() + xlab("Quantile") + ylab("Chain Length") + scale_x_continuous(breaks = seq(.1, 1, .1))
+
+matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll, apply, 1, median))), typ  = "o", pch = 16, ylab = "chainlength", xlab = "Quantile", main = "SD_size = 1")
+matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll10, apply, 1, median))), typ  = "o", pch = 16, ylab = "chainlength", xlab = "Quantile", main = "SD_size = 10")
