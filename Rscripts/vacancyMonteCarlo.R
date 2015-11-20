@@ -92,41 +92,62 @@ makeCHAIN <- function(intro, arena, threshold = .2, limits = c(1.01,1.5)){
   return(v)
 }
 
-sizes <- c("lnorm", "unif", "exp", "norm")
-ll10 <- list()
-system.time(
-for(k in 1:4){
+vacMC <- function(N){
+  sizes <- c("lnorm", "unif", "exp", "norm")
+  ll <- list()
+  ll10 <- list()
   
-  arena<- setup(n = 200, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
-  q <- quantile(arena[,3], probs = seq(.1, 1, .1))
-  coords <- matrix(runif(400), ncol = 2) 
-  
-  lens <- matrix(nrow = length(q), ncol = 200)
-  for(j in 1:length(q)){
-    chlen <- list()
-    for(i in 1:200){
-      ini <- c(coords[i,], q[j])
-      chlen[[i]] <- makeCHAIN(ini, arena)
+  for(k in 1:4){
+    
+    arena <- setup(n = N, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
+    q <- quantile(arena[,3], probs = seq(.1, 1, .1))
+    arena2 <- setup(n = N, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
+    q2 <- quantile(arena[,3], probs = seq(.1, 1, .1))
+    coords <- matrix(runif(N*2), ncol = 2) 
+    
+    lens <- matrix(nrow = length(q), ncol = N)
+    lens2 <- matrix(nrow = length(q), ncol = N)
+    for(j in 1:length(q)){
+      chlen <- list()
+      chlen2 <- list()
+      for(i in 1:N){
+        ini <- c(coords[i,], q[j])
+        chlen[[i]] <- makeCHAIN(ini, arena)
+        
+        ini2 <- c(coords[i,], q2[j])
+        chlen2[[i]] <- makeCHAIN(ini2, arena2)
+      }
+      lens[j,] <- sapply(chlen, length)
+      lens2[j,] <- sapply(chlen2, length)
     }
-    lens[j,] <- sapply(chlen, length)
+    
+    ll[[k]] <- lens
+    ll10[[k]] <- lens2
+    print(k)
   }
   
-  ll10[[k]] <- lens
-  print(k)
+  
+  llmed  <- (do.call(rbind, lapply(ll, apply, 1, median)))
+  rownames(llmed) <- sizes
+  df1 <- cbind(melt(t(llmed)), stdev = "Small", size = factor(N))
+  
+  llmed10  <- (do.call(rbind, lapply(ll10, apply, 1, median)))
+  rownames(llmed10) <- sizes
+  df2 <- cbind(melt(t(llmed10)), stdev = "Large", size = factor(N))
+  
+  df3 <- rbind(df1, df2)
+  return(df3)
 }
-)
 
-llmed  <- (do.call(rbind, lapply(ll, apply, 1, median)))
-rownames(llmed) <- sizes
-df1 <- cbind(melt(t(llmed)), stdev = "Small")
+n100 <- vacMC(100)
 
-llmed10  <- (do.call(rbind, lapply(ll10, apply, 1, median)))
-rownames(llmed10) <- sizes
-df2 <- cbind(melt(t(llmed10)), stdev = "Large")
+n200 <- vacMC(200)
 
-df3 <- rbind(df1, df2)
+n300 <- vacMC(300)
 
-ggplot(df3, aes(x = Var1/10, y = value, col = Var2)) + geom_path(lwd = 1) + geom_point(size = 4) + facet_grid(~stdev) + theme_bw() + xlab("Quantile") + ylab("Chain Length") + scale_x_continuous(breaks = seq(.1, 1, .1))
+alldf <- rbind(n100, n200, n300)
+
+ggplot(alldf, aes(x = Var1/10, y = value, col = Var2)) + geom_path(lwd = 1) + geom_point(size = 4) + scale_x_continuous(breaks = seq(.1, 1, .1)) + scale_color_discrete(name = "Size \nDistribution") +  facet_grid(size~stdev) + theme_bw() + xlab("Quantile") + ylab("Chain Length") 
 
 matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll, apply, 1, median))), typ  = "o", pch = 16, ylab = "chainlength", xlab = "Quantile", main = "SD_size = 1")
 matplot(seq(.1, 1, .1), t(do.call(rbind, lapply(ll10, apply, 1, median))), typ  = "o", pch = 16, ylab = "chainlength", xlab = "Quantile", main = "SD_size = 10")
