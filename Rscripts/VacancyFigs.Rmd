@@ -1,0 +1,43 @@
+---
+title: "Vacancy Chain Results"
+date: "November 20, 2015"
+output: pdf_document
+---
+
+```{r, echo = F, message = F, comment = NA}
+library(captioner)
+library(ggplot2)
+
+load("C:/Users/jjborrelli/Desktop/vacChain.Rdata")
+fig_nums <- captioner()
+
+library(knitr)
+opts_chunk$set(echo = F, message = F, comment = NA, tidy = T, warning = F, results = "asis")
+```
+
+
+
+```{r fig1, fig.width = 8, fig.height = 7}
+ggplot(plotDAT , aes(x = factor(Th), y = avpath)) + geom_boxplot() + facet_grid(diff~N, scales = "free_y") + theme_bw() + xlab("Threshold") + ylab("Average Chain Length")
+```
+
+`r fig_nums(name = "sensitivity", caption = "Average chain length as it depends on the number of individuals (across the top), difference between the min and max swap size (down the right side), and the maximum distance between two individuals that can be linked. Note there is a scale change among row y-axes.")`
+
+
+```{r fig2, fig.width = 8, fig.height = 7}
+ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point(size = 3) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
+```
+
+`r fig_nums(name = "distributions", caption = "Average chain length as it depends on the spatial distribution of individuals (across top) and the size distribution of individuals (down the right side)")`
+
+
+```{r fig3, fig.width = 8, fig.height = 7}
+ggplot(agDAT2, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point(size = 3) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain StDev") + theme_bw()
+```
+`r fig_nums(name = "dist sd", caption = "Same as Figure 2, but with standard deviations instead of averages")`
+
+
+```{r fig4, fig.width = 8, fig.height = 7}
+ggplot(alldf, aes(x = Var1/10, y = value, col = Var2)) + geom_path(lwd = 1) + geom_point(size = 4) + scale_x_continuous(breaks = seq(.1, 1, .1)) + scale_color_discrete(name = "Size \nDistribution") +  facet_grid(size~stdev) + theme_bw() + xlab("Quantile") + ylab("Chain Length") 
+```
+`r fig_nums(name = "vacMC", caption = "The average length of a chain starting with a unit sized based on different quantiles of the existing distribution. The left side is the result when there is a small standard deviation in unit size among the population, the right is with large standard deviation (1 for small, 10 for large). The simulation was repeated with 100, 200, and 300 individuals in the starting population")`
