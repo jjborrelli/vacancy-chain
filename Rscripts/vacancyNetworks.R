@@ -184,7 +184,7 @@ spar2 <- rep(spar, 3)
 # threshold
 t <- seq(.1, 1, .2)
 # min/max shell size for swapping
-lim <- matrix(c(rep(1,6), seq(1, 2, .2)), nrow = 6, ncol = 2)
+lim <- matrix(c(rep(1,3), seq(1.2, 2, .4)), nrow = 3, ncol = 2)
 
 pars <- cbind(expand.grid(n, t, lim[,2]), 1)
 
@@ -229,6 +229,30 @@ ggplot(rbindlist(allDAT2), aes(x = Th, y = avpath, col = factor(N), shape = fact
 agDAT <- aggregate(rblAD$avpath, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean)
 agDAT2 <- aggregate(rblAD$pathSD, list(rblAD$N, rblAD$Th, rblAD$diff, rblAD$shell, rblAD$spat), mean)
 
-ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point() + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
+ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point(size = 3) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
 
 ggplot(agDAT2, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point() + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain StDev") + theme_bw()
+
+
+
+# density test
+
+tm <- matrix(c(runif(500, 0, 1), runif(500, 0, 1)), nrow = 500, ncol = 2)
+
+test1 <- c()
+for(i in 1:100){
+  r1 <- runif(2, 0, 1)
+  test1[i] <- sum((tm[,1] - r1[1])^2 + (tm[,2] - r1[2])^2 <= .1)
+}
+
+#### the average number of points within the .1 threshold is ~120
+
+tm <- matrix(c(runif(250, 0, 1), runif(250, 0, 1)), nrow = 250, ncol = 2)
+
+test1 <- c()
+for(i in 1:100){
+  r1 <- runif(2, 0, 1)
+  test1[i] <- sum((tm[,1] - r1[1])^2 + (tm[,2] - r1[2])^2 <= .4)
+}
+
+mean(test1)

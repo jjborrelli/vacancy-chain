@@ -12,7 +12,7 @@ size_distr <- function(n, shellpar, mode){
   }else if(mode == "unif"){
     shell <- runif(n, shellpar[1], shellpar[2])
   }else if(mode == "exp"){
-    shell <- rexp(n)
+    shell <- rexp(n, shellpar[2])
   }else if(mode == "norm"){
     shell <- abs(rnorm(n, shellpar[1], shellpar[2]))
   }
@@ -66,6 +66,7 @@ size_distance.c <- cmpfun(size_distance)
 
 
 setup <- function(n, shellpar, mode, spatial){
+
   sizes <- size_distr.c(n, shellpar, mode)
   spat <- spat_distr.c(n, spatial) 
   
@@ -99,10 +100,10 @@ vacMC <- function(N){
   
   for(k in 1:4){
     
-    arena <- setup(n = N, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
+    arena <- setup(n = N, shellpar = c(.5,1), mode = sizes[k], spatial = "unif")
     q <- quantile(arena[,3], probs = seq(.1, 1, .1))
     arena2 <- setup(n = N, shellpar = c(.5,10), mode = sizes[k], spatial = "unif")
-    q2 <- quantile(arena[,3], probs = seq(.1, 1, .1))
+    q2 <- quantile(arena2[,3], probs = seq(.1, 1, .1))
     coords <- matrix(runif(N*2), ncol = 2) 
     
     lens <- matrix(nrow = length(q), ncol = N)
@@ -123,6 +124,11 @@ vacMC <- function(N){
     
     ll[[k]] <- lens
     ll10[[k]] <- lens2
+    
+    if(sizes[k] == "exp"){
+      ll[[k]] <- lens2
+      ll10[[k]] <- lens
+    }
     print(k)
   }
   
