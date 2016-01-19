@@ -25,14 +25,14 @@ ggplot(plotDAT , aes(x = factor(Th), y = avpath)) + geom_boxplot() + facet_grid(
 
 
 ```{r fig2, fig.width = 8, fig.height = 7}
-ggplot(agDAT, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point(size = 3) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
+ggplot(agDAT[agDAT$Group.3 == "0.2" |agDAT$Group.3 == "0.8", ], aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_line() + geom_point(size = 5) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain Length") + theme_bw()
 ```
 
 `r fig_nums(name = "distributions", caption = "Average chain length as it depends on the spatial distribution of individuals (across top) and the size distribution of individuals (down the right side)")`
 
 
 ```{r fig3, fig.width = 8, fig.height = 7}
-ggplot(agDAT2, aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_point(size = 3) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain StDev") + theme_bw()
+ggplot(agDAT2[agDAT2$Group.3 == "0.2" |agDAT2$Group.3 == "0.8", ], aes(x = Group.2, y = x, col = factor(Group.1), shape = factor(Group.3))) + geom_line() + geom_point(size = 5) + scale_color_discrete(name="N") + scale_shape_discrete(name = "Diff") + facet_grid(Group.4~Group.5) + xlab("Threshold") + ylab("Chain StDev") + theme_bw()
 ```
 `r fig_nums(name = "dist sd", caption = "Same as Figure 2, but with standard deviations instead of averages")`
 

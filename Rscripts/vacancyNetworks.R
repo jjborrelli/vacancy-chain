@@ -116,7 +116,7 @@ web_iters <- function(iter, n, sp, t, lim, shelldist = "lnorm", spatdist = "unif
 }
 
 # number of individuals
-n <- seq(50, 500, 50)
+n <- seq(50, 350, 100)
 # shell parameters of lognormal distr
 spar <- c(.5, 1)
 # threshold
@@ -124,7 +124,8 @@ t <- seq(.1, 1, .1)
 # min/max shell size for swapping
 lim <- matrix(c(rep(1,10), seq(1.1, 3, .2)), nrow = 10, ncol = 2)
 
-pars <- expand.grid(n, t, lim[,1], lim[,2])
+#pars <- expand.grid(n, t, lim[,1], lim[,2])
+pars <- rbind(expand.grid(n, t, 1.05, 1.25), expand.grid(n, t, 1.25, 1.45), expand.grid(n, t, 1.45, 1.65))
 
 diff1 <- pars[,4]-pars[,3]
 
@@ -138,7 +139,7 @@ cl <- makeCluster(detectCores()-1)
 registerDoSNOW(cl)
 
 system.time(
-RESULT <- foreach(i = 1:10000) %dopar% {
+RESULT3 <- foreach(i = 1:120) %dopar% {
   source("./Rscripts/vacancyNetScript.R")
   paths <- web_iters(iter = 100, n = pars[i,1], sp = spar, t = pars[i,2], lim = c(pars[i, 3], pars[i,4]))
   write(i, file = "C:/Users/jjborrelli/Dropbox/vacancy-runs.txt", append = T)
@@ -148,10 +149,13 @@ RESULT <- foreach(i = 1:10000) %dopar% {
 
 stopCluster(cl)
 
-allDAT <- rbindlist(RESULT)
+allDAT.3 <- cbind(rbindlist(RESULT3), win = rep(c("A", "B", "C"), each = 4000))
+
+allDAT.4 <- rbind(cbind(allDAT.2, winSize = ".1"), cbind(allDAT.3, winSize = ".2"))
+
 
 ggplot(allDAT, aes(x = Th, y = avpath)) + geom_point() + facet_grid(diff~N)
-ggplot(allDAT, aes(x = factor(Th), y = avpath)) + geom_boxplot() + facet_grid(diff~N, scales = "free_y") + theme_bw() + xlab("Threshold") + ylab("Average Chain Length")
+ggplot(allDAT.2, aes(x = factor(Th), y = avpath, fill = win)) + geom_boxplot() + facet_grid(N~., scales = "free_y") + theme_bw() + xlab("Threshold") + ylab("Average Chain Length")
 
 plotDAT <- allDAT[which(allDAT$N == 50 | allDAT$N == 250 | allDAT$N == 500),]
 plotDAT <- plotDAT[which(plotDAT$diff == "0.1" | plotDAT$diff == "0.3" | plotDAT$diff == "0.7" | plotDAT$diff == "1.3" | plotDAT$diff == "1.9"),]
