@@ -167,7 +167,7 @@ all2 <- aggregate(allDAT$avpath, by = list(allDAT$N, allDAT$Th, allDAT$diff), me
 ggplot(all2, aes(x = Group.2, y = Group.3, col = x)) + geom_point(size = 3) + facet_grid(.~Group.1) + xlab("Threshold") + ylab("diff")
 
 ############################################################################################
-#save.image(file = "C:/Users/jjborrelli/Desktop/vacChain.Rdata")
+#save.image(file = "C:/Users/jjborrelli/Desktop/vacChain2.Rdata")
 #load("./Data/vacChain.Rdata")
 #load("C:/Users/jjborrelli/Desktop/vacChain.Rdata")
 
